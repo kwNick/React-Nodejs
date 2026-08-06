@@ -53,10 +53,8 @@ function App() {
 
   const statusTask = useCallback(async (id: number, updateStatus: string) => {
       const thisTask = tasks.find((task) => task.id == id);
-      if(updateStatus != "Completed"){
-        if(updateStatus == thisTask?.status || thisTask?.status == "Completed"){
-          return;
-        }
+      if(updateStatus === thisTask?.status){
+        return;
       }
     
     try{
@@ -82,6 +80,35 @@ function App() {
     }
   }, [selectedTask, tasks]);
   
+  const completeTask = async (id: number, updateStatus: string) => {
+      const thisTask = tasks.find((task) => task.id == id);
+      if(updateStatus === "Completed" && thisTask?.completed){
+        return;
+      }
+    
+    try{
+      await fetch(`http://localhost:3000/tasks/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ completed: updateStatus == "Completed" ? true : false }),
+      });
+
+      // refresh list
+      const response = await fetch("http://localhost:3000/tasks");
+      const data = await response.json();
+      setTasks(data);
+
+      if(selectedTask?.id == id){
+        setSelectedTask(data.find((task: Task) => task.id == id));
+      }
+
+    }catch(error){
+      console.error("Error finishing task:", error);
+    }
+  }
+
   const addTask = async () => {
     const trimmedName = name.trim();
     
@@ -99,7 +126,7 @@ function App() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name, description, deadline, deadlineTime, priority, status }),
+          body: JSON.stringify({ name, description, deadline, deadlineTime, priority, status, completed: false }),
         });
 
         setName("");
@@ -166,12 +193,12 @@ function App() {
               <div className={`taskItem `}
                 key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
               }>
-                <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} `}>{task.name}</p>
+                <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
                 <div className="taskButtons">
                   <button className="finishButton" onClick={(e) => {
                   e.stopPropagation();
-                  statusTask(task.id, "Completed");
-                  }}>Finish</button>   <button className="deleteButton" onClick={(e) => {
+                  completeTask(task.id, (task.completed ? 'Incomplete' : 'Completed'));
+                  }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
                     e.stopPropagation();
                     deleteTask(task.id);
                   }}>Delete</button>
@@ -179,6 +206,25 @@ function App() {
               </div>
             )}
           )}
+          {/* <div>
+            {tasks.filter((task: Task) => task.completed == true).map((task) => (
+              <div className={`completedTasks`}
+                  key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
+                }>
+                  <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
+                  <div className="taskButtons">
+                    <button className="finishButton" onClick={(e) => {
+                    e.stopPropagation();
+                    completeTask(task.id, "Completed");
+                    }}>Finish</button>   <button className="deleteButton" onClick={(e) => {
+                      e.stopPropagation();
+                      deleteTask(task.id);
+                    }}>Delete</button>
+                  </div>
+                </div>
+              )
+            )}
+          </div> */}
         </div>
       </div>
 
@@ -259,6 +305,7 @@ function App() {
                   <p><strong>Deadline:</strong> {selectedTask.deadline} {selectedTask.deadlineTime}</p>
                   <p><strong>Priority:</strong> {selectedTask.priority}</p>
                   <p><strong>Status:</strong> {selectedTask.status}</p>
+                  <p>{selectedTask.completed ? <strong>Completed</strong> : <strong>Incomplete</strong>}</p>
                 </div>
               ):(
                 <p>Select a task to see details</p>

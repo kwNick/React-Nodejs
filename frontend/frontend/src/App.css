@@ -76,16 +76,20 @@ button {
   border: 2px solid red;
 }
 
-/* .taskItem.finished {
-  border: 2px solid green;
+/* .taskText.expired {
+  background-color: red;
 }
 
-.taskItem.expired {
-  border: 2px solid red;
+.taskText.inprogress {
+  background-color: #007bff;
 }
 
-.taskItem.inprogress {
-  border: 2px solid orange;
+.taskText.incomplete {
+
+}
+
+.taskText.incompleted {
+
 } */
 
 .taskText {

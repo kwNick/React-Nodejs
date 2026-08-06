@@ -8,9 +8,9 @@ app.use(express.json());
 
 // Fake data
 const tasks = [
-    { id: 1, name: "Go to gym.", description: "Gold's Gym", deadline: "08/30/2026", deadlineTime: "11:59 PM", priority: "High", status: "In Progress" },
-    { id: 2, name: "Do Homework.", description: "Math/Geography/Reading", deadline: "07/15/2024", deadlineTime: "11:59 PM", priority: "Medium", status: "Expired" },
-    { id: 3, name: "Buy groceries.", description: "Milk, Bread, Eggs", deadline: "07/30/2024", deadlineTime: "11:59 PM", priority: "Low", status: "Completed" }
+    { id: 1, name: "Go to gym.", description: "Gold's Gym", deadline: "08/30/2026", deadlineTime: "11:59 PM", priority: "High", status: "In Progress", completed: false },
+    { id: 2, name: "Do Homework.", description: "Math/Geography/Reading", deadline: "07/15/2024", deadlineTime: "11:59 PM", priority: "Medium", status: "Expired", completed: true },
+    { id: 3, name: "Buy groceries.", description: "Milk, Bread, Eggs", deadline: "07/30/2024", deadlineTime: "11:59 PM", priority: "Low", status: "Expired", completed: true }
 ];
 
 // GET endpoint
@@ -26,8 +26,8 @@ app.patch("/tasks/:id", (req, res) => {
         return res.status(404).json({ message: "Task not found" });
     }
 
-    // Object.assign(task, req.body);
-    Object.defineProperty(task, 'status', { value: req.body.status, writable: true });
+    Object.assign(task, req.body);
+    // Object.defineProperty(task, 'status', { value: req.body.status, writable: true });
 
     res.json({ message: "Task updated"});
 });
@@ -57,7 +57,8 @@ app.post("/tasks", (req, res) => {
         deadline: req.body.deadline ? req.body.deadline : new Date().toLocaleDateString(),
         deadlineTime: req.body.deadlineTime ? req.body.deadlineTime : "11:59 PM",
         priority: req.body.priority ? req.body.priority : "Low",
-        status: req.body.status
+        status: req.body.status,
+        completed: false
     };
 
     tasks.push(newTask);

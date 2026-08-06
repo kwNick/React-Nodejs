@@ -5,5 +5,6 @@ export interface Task {
   deadline: string;
   deadlineTime: string;
   priority: "Low" | "Medium" | "High";
-  status: "In Progress" | "Completed" | "Expired";
+  status: "In Progress" | "Expired";
+  completed: boolean;
 };
