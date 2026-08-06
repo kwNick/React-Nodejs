@@ -1,5 +1,5 @@
 .App{
-  /* background-color: hsla(187, 52%, 80%, 0.509); */
+  background-color: whitesmoke;
   width: 100%;
   height: 100vh;
   display: flex;
@@ -19,11 +19,11 @@ button {
 .taskList {
   background-color: hsla(187, 52%, 80%, 0.509);
   width: 100%;
-  height: 90vh;
+  height: 90%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: start;
   gap: 10px;
   margin: 5vh;
   border:#ccc 1px solid;

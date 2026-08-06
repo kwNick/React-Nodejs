@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import './App.css';
 import type { Task } from "./Types";
 
@@ -20,9 +20,6 @@ function App() {
   };
 
   const calculateStatus = (deadline: string, deadlineTime: string): Task["status"] => {
-  // if (task.status === "Finished") {
-  //   return "Finished";
-  // }
 
     const currentTime = new Date();
     const taskDeadline = new Date(deadline + " " + deadlineTime);
@@ -54,7 +51,13 @@ function App() {
     }
   };
 
-  const finishTask = async (id: number | null) => {
+  const statusTask = useCallback(async (id: number, updateStatus: string) => {
+      const thisTask = tasks.find((task) => task.id == id);
+      if(updateStatus != "Completed"){
+        if(updateStatus == thisTask?.status || thisTask?.status == "Completed"){
+          return;
+        }
+      }
     
     try{
       await fetch(`http://localhost:3000/tasks/${id}`, {
@@ -62,7 +65,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: "Completed" }),
+        body: JSON.stringify({ status: updateStatus }),
       });
 
       // refresh list
@@ -77,7 +80,7 @@ function App() {
     }catch(error){
       console.error("Error finishing task:", error);
     }
-  };
+  }, [selectedTask, tasks]);
   
   const addTask = async () => {
     const trimmedName = name.trim();
@@ -132,6 +135,7 @@ function App() {
     try{
       const response = await fetch("http://localhost:3000/tasks");
       const data = await response.json();
+      data.forEach((task: Task) => {statusTask(task.id, calculateStatus(task.deadline, task.deadlineTime))});
       setTasks(data);
     }catch(error){
       console.error("Error fetching tasks:", error);
@@ -139,7 +143,7 @@ function App() {
   };
   fetchTasks();
 
-  }, []);
+  }, [statusTask]);
   
   return (
     <div className="App">
@@ -166,7 +170,7 @@ function App() {
                 <div className="taskButtons">
                   <button className="finishButton" onClick={(e) => {
                   e.stopPropagation();
-                  finishTask(task.id);
+                  statusTask(task.id, "Completed");
                   }}>Finish</button>   <button className="deleteButton" onClick={(e) => {
                     e.stopPropagation();
                     deleteTask(task.id);
