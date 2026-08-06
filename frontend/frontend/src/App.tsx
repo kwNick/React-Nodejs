@@ -1,17 +1,40 @@
 import { useEffect, useState } from "react";
 import './App.css';
+import type { Task } from "./Types";
 
 function App() {
-  const [tasks, setTasks] = useState<{ id: number; name: string; description: string; deadline: string; priority: string }[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [name, setName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
-  const [priority, setPriority] = useState<string>("");
-  const [selectedTask, setSelectedTask] = useState<{ id: number; name: string; description: string; deadline: string; priority: string } | null>(null);
+  const [deadlineTime, setDeadlineTime] = useState<string>("");
+  const [priority, setPriority] = useState<Task["priority"]>("Low");
+  // const [status, setStatus] = useState<Task["status"]>("In Progress");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [error, setError] = useState("");
 
+  const priorityOrder = {
+    High: 3,
+    Medium: 2,
+    Low: 1
+  };
 
-  const deleteTask = async (id: number) => {
+  const calculateStatus = (deadline: string, deadlineTime: string): Task["status"] => {
+  // if (task.status === "Finished") {
+  //   return "Finished";
+  // }
+
+    const currentTime = new Date();
+    const taskDeadline = new Date(deadline + " " + deadlineTime);
+
+    if (taskDeadline < currentTime) {
+      return "Expired";
+    }
+
+    return "In Progress";
+  };
+
+  const deleteTask = async (id: number | null) => {
     if(id === selectedTask?.id){
       setSelectedTask(null);
     }
@@ -30,6 +53,31 @@ function App() {
       console.error("Error deleting task:", error);
     }
   };
+
+  const finishTask = async (id: number | null) => {
+    
+    try{
+      await fetch(`http://localhost:3000/tasks/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "Completed" }),
+      });
+
+      // refresh list
+      const response = await fetch("http://localhost:3000/tasks");
+      const data = await response.json();
+      setTasks(data);
+
+      if(selectedTask?.id == id){
+        setSelectedTask(data.find((task: Task) => task.id == id));
+      }
+
+    }catch(error){
+      console.error("Error finishing task:", error);
+    }
+  };
   
   const addTask = async () => {
     const trimmedName = name.trim();
@@ -39,6 +87,7 @@ function App() {
       setError("Task already exists!");
       return;
     }
+      const status = calculateStatus(deadline, deadlineTime);
 
       setError(""); // Clear any previous error message
       try{
@@ -47,13 +96,14 @@ function App() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name, description, deadline, priority }),
+          body: JSON.stringify({ name, description, deadline, deadlineTime, priority, status }),
         });
 
         setName("");
         setDescription("");
         setDeadline("");
-        setPriority("");
+        setDeadlineTime("");
+        setPriority("Low");
 
         // refresh list
         const response = await fetch("http://localhost:3000/tasks");  //resets data on restarting server
@@ -97,16 +147,34 @@ function App() {
         <h1>Tasks</h1>
         
         <div className="taskListContent">
-          {tasks.map(task => (
-            <div className={`taskItem ${selectedTask?.id === task.id ? "selectedTask" : ""}`}
-              key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
-            }>
-              <span className="taskText">{task.name}</span>   <button className="deleteButton" onClick={(e) => {
-                e.stopPropagation();
-                deleteTask(task.id);
-              }}>Delete</button>
-            </div>
-          ))}
+          {tasks.sort((a, b) => {
+            const dateA = new Date(a.deadline + " " + a.deadlineTime);
+            const dateB = new Date(b.deadline + " " + b.deadlineTime);
+            // Sort by deadline first
+            if(dateA.getTime() !== dateB.getTime()){
+              return dateA.getTime() - dateB.getTime();
+            }
+
+            return priorityOrder[b.priority] - priorityOrder[a.priority];
+
+          }).map(task => {
+            return (
+              <div className={`taskItem `}
+                key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
+              }>
+                <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} `}>{task.name}</p>
+                <div className="taskButtons">
+                  <button className="finishButton" onClick={(e) => {
+                  e.stopPropagation();
+                  finishTask(task.id);
+                  }}>Finish</button>   <button className="deleteButton" onClick={(e) => {
+                    e.stopPropagation();
+                    deleteTask(task.id);
+                  }}>Delete</button>
+                </div>
+              </div>
+            )}
+          )}
         </div>
       </div>
 
@@ -136,19 +204,34 @@ function App() {
                 placeholder="Enter description"
               />
 
-              <input
-                type="text"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                placeholder="Enter deadline"
-              />
+              <div className="deadlineInput">
+                <input
+                  type="text"
+                  pattern="\d{2}/\d{2}/\d{4}"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  placeholder="(MM/DD/YYYY)"
+                />
+                <input
+                  type="text"
+                  pattern="\d{2}:\d{2}\s*(AM|PM)"
+                  value={deadlineTime}
+                  onChange={(e) => setDeadlineTime(e.target.value)}
+                  placeholder="(HH:MM AM/PM)"
+                />
+              </div>
 
-              <input
+              {/* <input
                 type="text"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                placeholder="Enter priority"
-              />
+                placeholder="Priority (Low, Medium, High)"
+              /> */}
+              <select value={priority} onChange={(e) => setPriority(e.target.value as Task["priority"])}>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
 
               {/* <div className="addUserButton"> */}
                 <button type="submit" disabled={!name.trim()}>
@@ -166,11 +249,12 @@ function App() {
 
             <div >
               {selectedTask ? (
-                <div>
+                <div className="taskDetailsContent">
                   <p><strong>Name:</strong> {selectedTask.name}</p>
                   <p><strong>Description:</strong> {selectedTask.description}</p>
-                  <p><strong>Deadline:</strong> {selectedTask.deadline}</p>
+                  <p><strong>Deadline:</strong> {selectedTask.deadline} {selectedTask.deadlineTime}</p>
                   <p><strong>Priority:</strong> {selectedTask.priority}</p>
+                  <p><strong>Status:</strong> {selectedTask.status}</p>
                 </div>
               ):(
                 <p>Select a task to see details</p>
