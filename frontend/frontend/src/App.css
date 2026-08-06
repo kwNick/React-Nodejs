@@ -4,11 +4,14 @@
   height: 100vh;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  gap: 10px;
+  justify-content: center;
+  /* gap: 5px; */
 }
 
 h1 {
+  text-decoration: underline;
+}
+h2 {
   text-decoration: underline;
 }
 
@@ -19,31 +22,83 @@ button {
 .taskList {
   background-color: hsla(187, 52%, 80%, 0.509);
   width: 100%;
-  height: 90%;
+  height: 95%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: start;
-  gap: 10px;
-  margin: 5vh;
+  gap: 5px;
+  margin-left: 5px;
   border:#ccc 1px solid;
   border-radius: 5px;
-  overflow-y: auto;
+  padding-bottom: 5px;
+  /* padding-left: 5px; */
+  /* overflow-y: auto; */
 }
 
 .taskListContent {
-  min-height: 33%;
-  min-width: 80%;
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: start;
-  gap: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-right:#0056b3 1px solid;
+  /* gap: 10px; */
+  /* padding: 20px; */
+  /* margin-bottom: 20px; */
+  /* border-right:#0056b3 1px solid;
   border-left:#0056b3 1px solid;
+  overflow-y: auto; */
+}
+.toDoTasks {
+  height: 50%;
+  width: 100%;
+  border-bottom: #0056b3 1px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  /* border-right:#0056b3 1px solid;
+  border-left:#0056b3 1px solid; */
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.doneTasks {
+  height: 50%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  /* gap: 5px; */
+  /* border: red 1px solid; */
+  /* border-right: red 1px solid;
+  border-left: red 1px solid; */
+  
+}
+
+.finishedTasks {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  border-right: #0056b3 1px solid;
+  /* overflow-x: hidden; */
+}
+
+.expiredTasks {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  border-left: #0056b3 1px solid;
+  /* overflow-x: hidden; */
 }
 
 .taskItem {
@@ -52,7 +107,7 @@ button {
   align-items: center;
   justify-content: space-between;
   /* width: 200px; */
-  padding: 5px;
+  padding-bottom: 4px;
   /* border-bottom: 1px solid #ccc; */
 }
 
@@ -95,7 +150,7 @@ button {
 .taskText {
   font-weight: bold;
   margin-right: 10px;
-  width: 80%;
+  width: 90%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -144,18 +199,18 @@ button {
 
 .rightPanel {
   width: 100%;
-  height: 90vh;
+  height: 95vh;
   display: flex;
   flex-direction: column;
-  align-items: space-around;
+  align-items: center;
   justify-content: center;
   gap: 20px;
-  padding: 20px;
+  /* padding: 20px; */
 }
 
 .addTaskForm {
   background-color: hsla(187, 52%, 80%, 0.509);
-  width: 80%;
+  width: 90%;
   height: 50%;
   display: flex;
   flex-direction: column;
@@ -210,12 +265,12 @@ button {
 
 .taskDetails {
   background-color: hsla(187, 52%, 80%, 0.509);
-  width: 80%;
+  width: 90%;
   height: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: start;
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 10px;

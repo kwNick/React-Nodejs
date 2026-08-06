@@ -178,53 +178,99 @@ function App() {
         <h1>Tasks</h1>
         
         <div className="taskListContent">
-          {tasks.sort((a, b) => {
-            const dateA = new Date(a.deadline + " " + a.deadlineTime);
-            const dateB = new Date(b.deadline + " " + b.deadlineTime);
-            // Sort by deadline first
-            if(dateA.getTime() !== dateB.getTime()){
-              return dateA.getTime() - dateB.getTime();
-            }
+          <div className="toDoTasks">
+            <h2>To-Do</h2>
+            {tasks.sort((a, b) => {
+              const dateA = new Date(a.deadline + " " + a.deadlineTime);
+              const dateB = new Date(b.deadline + " " + b.deadlineTime);
+              // Sort by deadline first
+              if(dateA.getTime() !== dateB.getTime()){
+                return dateA.getTime() - dateB.getTime();
+              }
 
-            return priorityOrder[b.priority] - priorityOrder[a.priority];
+              return priorityOrder[b.priority] - priorityOrder[a.priority];
 
-          }).map(task => {
-            return (
-              <div className={`taskItem `}
-                key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
-              }>
-                <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
-                <div className="taskButtons">
-                  <button className="finishButton" onClick={(e) => {
-                  e.stopPropagation();
-                  completeTask(task.id, (task.completed ? 'Incomplete' : 'Completed'));
-                  }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
-                    e.stopPropagation();
-                    deleteTask(task.id);
-                  }}>Delete</button>
-                </div>
-              </div>
-            )}
-          )}
-          {/* <div>
-            {tasks.filter((task: Task) => task.completed == true).map((task) => (
-              <div className={`completedTasks`}
+            }).filter((task: Task) => (!task.completed && task.status == "In Progress")).map(task => {
+              return (
+                <div className={`taskItem `}
                   key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
                 }>
                   <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
                   <div className="taskButtons">
                     <button className="finishButton" onClick={(e) => {
                     e.stopPropagation();
-                    completeTask(task.id, "Completed");
-                    }}>Finish</button>   <button className="deleteButton" onClick={(e) => {
+                    completeTask(task.id, (task.completed ? 'Incomplete' : 'Completed'));
+                    }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
                       e.stopPropagation();
                       deleteTask(task.id);
                     }}>Delete</button>
                   </div>
                 </div>
-              )
+              )}
             )}
-          </div> */}
+          </div>
+          <div className="doneTasks">
+            <div className="finishedTasks">
+              <h2>Finished</h2>
+              {tasks.filter((task: Task) => task.completed).sort((a, b) => {
+                const dateA = new Date(a.deadline + " " + a.deadlineTime);
+                const dateB = new Date(b.deadline + " " + b.deadlineTime);
+                // Sort by deadline first
+                if(dateA.getTime() !== dateB.getTime()){
+                  return dateA.getTime() - dateB.getTime();
+                }
+
+                return priorityOrder[b.priority] - priorityOrder[a.priority];
+
+                }).map((task) => (
+                <div className={`taskItem`}
+                    key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
+                  }>
+                    <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
+                    <div className="taskButtons">
+                      <button className="finishButton" onClick={(e) => {
+                      e.stopPropagation();
+                      completeTask(task.id,(task.completed ? 'Incomplete' : 'Completed'));
+                      }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTask(task.id);
+                      }}>Delete</button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+            <div className="expiredTasks">
+              <h2>Expired</h2>
+                {tasks.filter((task: Task) => (task.status == "Expired" && !task.completed)).sort((a, b) => {
+                  const dateA = new Date(a.deadline + " " + a.deadlineTime);
+                  const dateB = new Date(b.deadline + " " + b.deadlineTime);
+                  // Sort by deadline first
+                  if(dateA.getTime() !== dateB.getTime()){
+                    return dateA.getTime() - dateB.getTime();
+                  }
+
+                  return priorityOrder[b.priority] - priorityOrder[a.priority];
+
+                }).map((task) => (
+                <div className={`taskItem`}
+                    key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
+                  }>
+                    <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
+                    <div className="taskButtons">
+                      <button className="finishButton" onClick={(e) => {
+                      e.stopPropagation();
+                      completeTask(task.id, (task.completed ? 'Incomplete' : 'Completed'));
+                      }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTask(task.id);
+                      }}>Delete</button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
