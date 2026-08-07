@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import './App.css';
 import type { Task } from "./Types";
 import TaskItem from "./Components/TaskItem";
+import TaskDetails from "./Components/TaskDetails";
+import AddTaskForm from "./Components/AddTaskForm";
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -108,6 +110,7 @@ function App() {
   }, [selectedTask, tasks]);
   
   const completeTask = async (id: number) => {
+    setSelectedTask(null);
       const thisTask = tasks.find((task) => task.id == id);
       // if(updateStatus === "Completed" && thisTask?.completed){
       //   return;
@@ -127,9 +130,9 @@ function App() {
       const data = await response.json();
       setTasks(data);
 
-      if(selectedTask?.id == id){
-        setSelectedTask(data.find((task: Task) => task.id == id));
-      }
+      // if(selectedTask?.id == id){
+      //   setSelectedTask(data.find((task: Task) => task.id == id));
+      // }
 
     }catch(error){
       console.error("Error finishing task:", error);
@@ -337,7 +340,9 @@ function App() {
 
         <div className="rightPanel">
 
-          <div className="addTaskForm">
+            <AddTaskForm addTask={addTask} name={name} description={description} deadline={deadline}  deadlineTime={deadlineTime} priority={priority} error={error} setName={setName} setDescription={setDescription} setDeadline={setDeadline} setDeadlineTime={setDeadlineTime} setPriority={setPriority}/>
+
+          {/* <div className="addTaskForm">
             <h1>Add Task</h1>
 
             <form className="addTaskInput" onSubmit={(e) => {
@@ -376,30 +381,23 @@ function App() {
                   placeholder="(HH:MM AM/PM)"
                 />
               </div>
-
-              {/* <input
-                type="text"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                placeholder="Priority (Low, Medium, High)"
-              /> */}
+              
               <select value={priority} onChange={(e) => setPriority(e.target.value as Task["priority"])}>
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
                 <option value="High">High</option>
               </select>
 
-              {/* <div className="addUserButton"> */}
                 <button type="submit" disabled={!name.trim()}>
                   Add Task
                 </button>
-              {/* </div> */}
             </form>
               {error && <p className="error">{error}</p>}
 
-          </div>
+          </div> */}
 
-          <div className="taskDetails">
+          <TaskDetails selectedTask={selectedTask}/>
+          {/* <div className="taskDetails">
             <h1>Task Details</h1>
 
             <div >
@@ -416,7 +414,7 @@ function App() {
                 <p>Select a task to see details</p>
               )}
             </div>
-          </div>
+          </div> */}
 
         </div>
     </div>
