@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import './App.css';
 import type { Task } from "./Types";
+import TaskItem from "./Components/TaskItem";
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -9,8 +10,8 @@ function App() {
   const [deadline, setDeadline] = useState<string>("");
   const [deadlineTime, setDeadlineTime] = useState<string>("");
   const [priority, setPriority] = useState<Task["priority"]>("Low");
-  // const [status, setStatus] = useState<Task["status"]>("In Progress");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [activeTab, setActiveTab] = useState<"To-Do" | "Completed" | "All">("To-Do");
   const [error, setError] = useState("");
 
   const priorityOrder = {
@@ -18,6 +19,32 @@ function App() {
     Medium: 2,
     Low: 1
   };
+
+  const sortTasks = (tasks: Task[]) => {
+    return [...tasks].sort((a, b) => {
+      const dateA = new Date(`${a.deadline} ${a.deadlineTime}`);
+      const dateB = new Date(`${b.deadline} ${b.deadlineTime}`);
+
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateA.getTime() - dateB.getTime();
+      }
+
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    });
+  };
+
+  const filteredTasks = sortTasks(tasks).filter(task => {
+    if(activeTab === "To-Do") {
+      return (!task.completed);
+    }
+
+    if(activeTab === "Completed") {
+      return task.completed;
+    }
+
+    return true;
+
+  });
 
   const calculateStatus = (deadline: string, deadlineTime: string): Task["status"] => {
 
@@ -80,11 +107,11 @@ function App() {
     }
   }, [selectedTask, tasks]);
   
-  const completeTask = async (id: number, updateStatus: string) => {
+  const completeTask = async (id: number) => {
       const thisTask = tasks.find((task) => task.id == id);
-      if(updateStatus === "Completed" && thisTask?.completed){
-        return;
-      }
+      // if(updateStatus === "Completed" && thisTask?.completed){
+      //   return;
+      // }
     
     try{
       await fetch(`http://localhost:3000/tasks/${id}`, {
@@ -92,7 +119,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ completed: updateStatus == "Completed" ? true : false }),
+        body: JSON.stringify({ completed: !thisTask?.completed }),
       });
 
       // refresh list
@@ -176,11 +203,25 @@ function App() {
     <div className="App">
       <div className="taskList">
         <h1>Tasks</h1>
-        
+
+        <div className="taskTabs">
+          <button onClick={() => setActiveTab("To-Do")}>
+            To-Do
+          </button>
+
+          <button onClick={() => setActiveTab("Completed")}>
+            Completed
+          </button>
+
+          <button onClick={() => setActiveTab("All")}>
+            All Tasks
+          </button>
+        </div>
+
         <div className="taskListContent">
           <div className="toDoTasks">
-            <h2>To-Do</h2>
-            {tasks.sort((a, b) => {
+            <h2>{activeTab}</h2>
+            {/* tasks.sort((a, b) => {
               const dateA = new Date(a.deadline + " " + a.deadlineTime);
               const dateB = new Date(b.deadline + " " + b.deadlineTime);
               // Sort by deadline first
@@ -190,26 +231,36 @@ function App() {
 
               return priorityOrder[b.priority] - priorityOrder[a.priority];
 
-            }).filter((task: Task) => (!task.completed && task.status == "In Progress")).map(task => {
+            }).filter((task: Task) => (!task.completed )) */}
+            {filteredTasks.map(task => {
               return (
-                <div className={`taskItem `}
-                  key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
-                }>
-                  <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
-                  <div className="taskButtons">
-                    <button className="finishButton" onClick={(e) => {
-                    e.stopPropagation();
-                    completeTask(task.id, (task.completed ? 'Incomplete' : 'Completed'));
-                    }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
-                      e.stopPropagation();
-                      deleteTask(task.id);
-                    }}>Delete</button>
-                  </div>
-                </div>
+                <TaskItem 
+                  task={task} 
+                  selectedTask={selectedTask} 
+                  setSelectedTask={setSelectedTask} 
+                  completeTask={completeTask} 
+                  deleteTask={deleteTask}
+                />
+
+                // <div className={`taskItem `}
+                //   key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
+                // }>
+                //   <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
+                //   <div className="taskButtons">
+                //     <button className="finishButton" onClick={(e) => {
+                //     e.stopPropagation();
+                //     completeTask(task.id, !task.completed );
+                //     }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
+                //       e.stopPropagation();
+                //       deleteTask(task.id);
+                //     }}>Delete</button>
+                //   </div>
+                // </div>
               )}
             )}
           </div>
-          <div className="doneTasks">
+
+          {/* <div className="doneTasks" >
             <div className="finishedTasks">
               <h2>Finished</h2>
               {tasks.filter((task: Task) => task.completed).sort((a, b) => {
@@ -223,14 +274,22 @@ function App() {
                 return priorityOrder[b.priority] - priorityOrder[a.priority];
 
                 }).map((task) => (
-                <div className={`taskItem`}
-                    key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
+                <div 
+                    className={`taskItem`}
+                    key={task.id} 
+                    onClick={() => selectedTask?.id === task?.id ? setSelectedTask(null) : setSelectedTask(task)
                   }>
-                    <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
+                    <p className={`taskText 
+                      ${selectedTask?.id === task.id ? "selectedTask" : ""} 
+                      ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} 
+                      ${task.completed ? 'completed' : 'incomplete'}`}
+                    >
+                        {task.name}
+                    </p>
                     <div className="taskButtons">
                       <button className="finishButton" onClick={(e) => {
                       e.stopPropagation();
-                      completeTask(task.id,(task.completed ? 'Incomplete' : 'Completed'));
+                      completeTask(task.id);
                       }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
                         e.stopPropagation();
                         deleteTask(task.id);
@@ -240,6 +299,7 @@ function App() {
                 )
               )}
             </div>
+
             <div className="expiredTasks">
               <h2>Expired</h2>
                 {tasks.filter((task: Task) => (task.status == "Expired" && !task.completed)).sort((a, b) => {
@@ -254,13 +314,13 @@ function App() {
 
                 }).map((task) => (
                 <div className={`taskItem`}
-                    key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
+                    key={task.id} onClick={() => selectedTask?.id === task?.id ? setSelectedTask(null) : setSelectedTask(task)
                   }>
                     <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
                     <div className="taskButtons">
                       <button className="finishButton" onClick={(e) => {
                       e.stopPropagation();
-                      completeTask(task.id, (task.completed ? 'Incomplete' : 'Completed'));
+                      completeTask(task.id);
                       }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
                         e.stopPropagation();
                         deleteTask(task.id);
@@ -270,14 +330,14 @@ function App() {
                 )
               )}
             </div>
-          </div>
+          </div> */}
+
         </div>
       </div>
 
         <div className="rightPanel">
 
           <div className="addTaskForm">
-
             <h1>Add Task</h1>
 
             <form className="addTaskInput" onSubmit={(e) => {
@@ -340,7 +400,6 @@ function App() {
           </div>
 
           <div className="taskDetails">
-
             <h1>Task Details</h1>
 
             <div >
@@ -357,7 +416,6 @@ function App() {
                 <p>Select a task to see details</p>
               )}
             </div>
-
           </div>
 
         </div>

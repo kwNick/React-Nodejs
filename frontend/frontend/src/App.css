@@ -19,6 +19,14 @@ button {
   cursor: pointer;
 }
 
+.taskTabs {
+  width: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 5px;
+}
+
 .taskList {
   background-color: hsla(187, 52%, 80%, 0.509);
   width: 100%;
@@ -53,7 +61,7 @@ button {
 .toDoTasks {
   height: 50%;
   width: 100%;
-  border-bottom: #0056b3 1px solid;
+  /* border-bottom: #0056b3 1px solid; */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -64,18 +72,16 @@ button {
   overflow-x: hidden;
 }
 
-.doneTasks {
+
+/* .doneTasks {
   height: 50%;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: start;
-  /* gap: 5px; */
-  /* border: red 1px solid; */
-  /* border-right: red 1px solid;
-  border-left: red 1px solid; */
   
 }
+
 
 .finishedTasks {
   width: 100%;
@@ -86,7 +92,6 @@ button {
   align-items: center;
   justify-content: start;
   border-right: #0056b3 1px solid;
-  /* overflow-x: hidden; */
 }
 
 .expiredTasks {
@@ -98,8 +103,7 @@ button {
   align-items: center;
   justify-content: start;
   border-left: #0056b3 1px solid;
-  /* overflow-x: hidden; */
-}
+} */
 
 .taskItem {
   width: 90%;
@@ -120,15 +124,15 @@ button {
 } */
 
 .taskText.Low {
-  border: 2px solid yellow;
+  border-bottom: 2px solid yellow;
 }
 
 .taskText.Medium {
-  border: 2px solid orange;
+  border-bottom: 2px solid orange;
 }
 
 .taskText.High {
-  border: 2px solid red;
+  border-bottom: 2px solid red;
 }
 
 /* .taskText.expired {
