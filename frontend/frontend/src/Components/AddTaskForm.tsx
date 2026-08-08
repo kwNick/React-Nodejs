@@ -1,4 +1,4 @@
-import type { Task } from "../Types";
+import type { Task } from "../Types/Types";
 
 export default function AddTaskForm(
     {handleAddTask, name, description, deadline, deadlineTime, priority, error, setName, setDescription, setDeadline, setDeadlineTime, setPriority}:{

@@ -2,10 +2,11 @@
 
 ## Features to Add
 
-- Expired tasks have a symbol or mark on their component, something red
-- Completed tasks have a symbol or mark on their component, something green
-- Change color theme, light and dark theme
-- Maybe add Redux instead of all this state
+- Seperate fetch logic and utility functions.
+- Expired tasks have a symbol or mark on their component, something red.
+- Completed tasks have a symbol or mark on their component, something green.
+- Change color theme, light and dark theme.
+- Maybe add Redux instead of all this state.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

@@ -1,22 +1,22 @@
-import type { Task } from "../Types";
+import type { Task } from "../Types/Types";
 
 export default function TaskItem({
     task,
-    selectedTask,
-    setSelectedTask,
+    selectedTaskID,
+    setSelectedTaskID,
     handleFinishTask,
     handleDeleteTask,
   }: {
     task: Task;
-    selectedTask: Task | null;
-    setSelectedTask: (task: Task | null) => void;
+    selectedTaskID: number | null;
+    setSelectedTaskID: (id: number | null) => void;
     handleFinishTask: (id: number) => void;
     handleDeleteTask: (id: number) => void;
   }) {
 
     const handleSelect = () => {
-      setSelectedTask(
-        selectedTask?.id === task.id ? null : task
+      setSelectedTaskID(
+        selectedTaskID === task.id ? null : task.id
       );
     };
 
@@ -25,7 +25,7 @@ export default function TaskItem({
       <div className={`taskItem `}
         key={task.id} onClick={handleSelect}>
           <p className={`taskText 
-                ${selectedTask?.id === task.id ? "selectedTask" : ""} 
+                ${selectedTaskID === task.id ? "selectedTask" : ""} 
                 ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} 
                 ${task.completed ? 'completed' : 'incomplete'}`}
             >

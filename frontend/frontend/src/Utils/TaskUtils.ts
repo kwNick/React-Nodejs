@@ -1,4 +1,4 @@
-import type {Task } from '../Types';
+import type {Task } from '../Types/Types';
 
 export const priorityOrder = {
     High: 3,

@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import './App.css';
-import type { Task } from "./Types";
+import type { Task } from "./Types/Types";
 import TaskItem from "./Components/TaskItem";
 import TaskDetails from "./Components/TaskDetails";
 import AddTaskForm from "./Components/AddTaskForm";
 import { calculateStatus, sortTasks } from "./Utils/TaskUtils";
 import { createTask, deleteTask, getTasks, updateTask } from "./Services/TaskServices";
+import TaskTabs from "./Components/TaskTabs";
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -14,7 +15,7 @@ function App() {
   const [deadline, setDeadline] = useState<string>("");
   const [deadlineTime, setDeadlineTime] = useState<string>("");
   const [priority, setPriority] = useState<Task["priority"]>("Low");
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTaskID, setSelectedTaskID] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"To-Do" | "Completed" | "All">("To-Do");
   const [error, setError] = useState("");
 
@@ -39,40 +40,19 @@ function App() {
   };
 
   const handleDeleteTask = async (id: number) => {
-    
     try{
       await deleteTask(id);
       
       await refreshTasks();
 
-      if(id === selectedTask?.id){
-        setSelectedTask(null);
+      if(id === selectedTaskID){
+        setSelectedTaskID(null);
       }
 
     }catch(error){
       console.error("Error deleting task:", error);
     }
   };
-
-  const handleStatusTask = useCallback(async (id: number, updateStatus: Task['status']) => {
-      const thisTask = tasks.find((task) => task.id == id);
-      if(updateStatus === thisTask?.status || !thisTask){
-        return;
-      }
-    
-    try{
-      await updateTask(id, {status: updateStatus})
-
-      const data = await refreshTasks();
-
-      if(selectedTask?.id == id){
-        setSelectedTask(data.find((task: Task) => task.id == id) ?? null);
-      }
-
-    }catch(error){
-      console.error("Error finishing task:", error);
-    }
-  }, [selectedTask, tasks]);
   
   const handleFinishTask = async (id: number) => {
     const thisTask = tasks.find((task) => task.id == id);
@@ -84,14 +64,14 @@ function App() {
         completed: !thisTask.completed,
       });
       
-      setSelectedTask(null);
+      // setSelectedTaskID(null);
 
       await refreshTasks();
 
     }catch(error){
       console.error("Error finishing task:", error);
     }
-  }
+  };
 
   const handleAddTask = async () => {
     const trimmedName = name.trim();
@@ -128,24 +108,8 @@ function App() {
       }catch(error){
         console.error("Error adding task:", error);
       }
-  }
+  };
 
-//   useEffect(() => {
-//   const interval = setInterval(() => {
-//     setTasks(prevTasks =>
-//       prevTasks.map(task => ({
-//         ...task,
-//         status: calculateStatus(
-//           task.deadline,
-//           task.deadlineTime
-//         )
-//       }))
-//     );
-//   }, 1000);
-
-//   return () => clearInterval(interval);
-// }, []);
-  
   useEffect(() => {
     const remErrors = async () => {
       setError("");
@@ -154,38 +118,51 @@ function App() {
   }, [name]);
   
   useEffect(() => {
+    const checkStatus = setInterval(() => {
+      setTasks(prevTasks => {
+        return prevTasks.map(task => {
+          const newStatus = calculateStatus(
+            task.deadline,
+            task.deadlineTime
+          );
 
-   const fetchTasks = async () => {
-    try{
-      const data = await refreshTasks();
-      data.forEach((task: Task) => {handleStatusTask(task.id, calculateStatus(task.deadline, task.deadlineTime))});
-      setTasks(data);
-    }catch(error){
-      console.error("Error fetching tasks:", error);
-    }
-  };
-  fetchTasks();
+          if (newStatus !== task.status) {
+            updateTask(task.id, {status: newStatus})
+              .catch(error => {console.error("Error updating task status:", error);});
 
-  }, [handleStatusTask]);
+            return {
+              ...task,
+              status: newStatus
+            };
+          }
+
+          return task;
+        });
+      });
+      
+    }, 1000);
+
+    return () => clearInterval(checkStatus);
+  }, []);
+
+  useEffect(() =>{
+    const fetchTasksOnMount = async () => {
+      try {
+        await refreshTasks();
+      } catch (error) {
+        console.error("Error Fetching Tasks: ", error);
+      }
+    };
+
+    fetchTasksOnMount();
+  }, []);
   
   return (
     <div className="App">
       <div className="taskList">
         <h1>Tasks</h1>
 
-        <div className="taskTabs">
-          <button onClick={() => setActiveTab("To-Do")}>
-            To-Do
-          </button>
-
-          <button onClick={() => setActiveTab("Completed")}>
-            Completed
-          </button>
-
-          <button onClick={() => setActiveTab("All")}>
-            All Tasks
-          </button>
-        </div>
+        <TaskTabs setActiveTab={setActiveTab}/>
 
         <div className="taskListContent">
           <div className="toDoTasks">
@@ -194,8 +171,8 @@ function App() {
               return (
                 <TaskItem 
                   task={task} 
-                  selectedTask={selectedTask} 
-                  setSelectedTask={setSelectedTask} 
+                  selectedTaskID={selectedTaskID} 
+                  setSelectedTaskID={setSelectedTaskID} 
                   handleFinishTask={handleFinishTask} 
                   handleDeleteTask={handleDeleteTask}
                 />
@@ -210,7 +187,7 @@ function App() {
 
             <AddTaskForm handleAddTask={handleAddTask} name={name} description={description} deadline={deadline}  deadlineTime={deadlineTime} priority={priority} error={error} setName={setName} setDescription={setDescription} setDeadline={setDeadline} setDeadlineTime={setDeadlineTime} setPriority={setPriority}/>
 
-          <TaskDetails selectedTask={selectedTask}/>
+          <TaskDetails selectedTask={(tasks.find(task => task.id === selectedTaskID)) ?? null}/>
 
         </div>
     </div>
