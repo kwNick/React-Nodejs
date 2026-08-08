@@ -1,8 +1,8 @@
 import type { Task } from "../Types";
 
 export default function AddTaskForm(
-    {addTask, name, description, deadline, deadlineTime, priority, error, setName, setDescription, setDeadline, setDeadlineTime, setPriority}:{
-        addTask: () => void;
+    {handleAddTask, name, description, deadline, deadlineTime, priority, error, setName, setDescription, setDeadline, setDeadlineTime, setPriority}:{
+        handleAddTask: () => void;
         name: string;
         description: string;
         deadline: string;
@@ -21,7 +21,7 @@ export default function AddTaskForm(
 
             <form className="addTaskInput" onSubmit={(e) => {
                 e.preventDefault();
-                addTask();
+                handleAddTask();
                 }}>
 
                 <input

@@ -4,6 +4,8 @@ import type { Task } from "./Types";
 import TaskItem from "./Components/TaskItem";
 import TaskDetails from "./Components/TaskDetails";
 import AddTaskForm from "./Components/AddTaskForm";
+import { calculateStatus, sortTasks } from "./Utils/TaskUtils";
+import { createTask, deleteTask, getTasks, updateTask } from "./Services/TaskServices";
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -16,24 +18,6 @@ function App() {
   const [activeTab, setActiveTab] = useState<"To-Do" | "Completed" | "All">("To-Do");
   const [error, setError] = useState("");
 
-  const priorityOrder = {
-    High: 3,
-    Medium: 2,
-    Low: 1
-  };
-
-  const sortTasks = (tasks: Task[]) => {
-    return [...tasks].sort((a, b) => {
-      const dateA = new Date(`${a.deadline} ${a.deadlineTime}`);
-      const dateB = new Date(`${b.deadline} ${b.deadlineTime}`);
-
-      if (dateA.getTime() !== dateB.getTime()) {
-        return dateA.getTime() - dateB.getTime();
-      }
-
-      return priorityOrder[b.priority] - priorityOrder[a.priority];
-    });
-  };
 
   const filteredTasks = sortTasks(tasks).filter(task => {
     if(activeTab === "To-Do") {
@@ -48,60 +32,41 @@ function App() {
 
   });
 
-  const calculateStatus = (deadline: string, deadlineTime: string): Task["status"] => {
-
-    const currentTime = new Date();
-    const taskDeadline = new Date(deadline + " " + deadlineTime);
-
-    if (taskDeadline < currentTime) {
-      return "Expired";
-    }
-
-    return "In Progress";
+  const refreshTasks = async () => {
+    const data = await getTasks();
+    setTasks(data);
+    return data;
   };
 
-  const deleteTask = async (id: number | null) => {
-    if(id === selectedTask?.id){
-      setSelectedTask(null);
-    }
-
+  const handleDeleteTask = async (id: number) => {
+    
     try{
-      await fetch(`http://localhost:3000/tasks/${id}`, {
-        method: "DELETE",
-      });
+      await deleteTask(id);
+      
+      await refreshTasks();
 
-      // refresh list
-      const response = await fetch("http://localhost:3000/tasks");
-      const data = await response.json();
-      setTasks(data);
+      if(id === selectedTask?.id){
+        setSelectedTask(null);
+      }
 
     }catch(error){
       console.error("Error deleting task:", error);
     }
   };
 
-  const statusTask = useCallback(async (id: number, updateStatus: string) => {
+  const handleStatusTask = useCallback(async (id: number, updateStatus: Task['status']) => {
       const thisTask = tasks.find((task) => task.id == id);
-      if(updateStatus === thisTask?.status){
+      if(updateStatus === thisTask?.status || !thisTask){
         return;
       }
     
     try{
-      await fetch(`http://localhost:3000/tasks/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: updateStatus }),
-      });
+      await updateTask(id, {status: updateStatus})
 
-      // refresh list
-      const response = await fetch("http://localhost:3000/tasks");
-      const data = await response.json();
-      setTasks(data);
+      const data = await refreshTasks();
 
       if(selectedTask?.id == id){
-        setSelectedTask(data.find((task: Task) => task.id == id));
+        setSelectedTask(data.find((task: Task) => task.id == id) ?? null);
       }
 
     }catch(error){
@@ -109,37 +74,26 @@ function App() {
     }
   }, [selectedTask, tasks]);
   
-  const completeTask = async (id: number) => {
-    setSelectedTask(null);
-      const thisTask = tasks.find((task) => task.id == id);
-      // if(updateStatus === "Completed" && thisTask?.completed){
-      //   return;
-      // }
+  const handleFinishTask = async (id: number) => {
+    const thisTask = tasks.find((task) => task.id == id);
+
+    if(!thisTask) return;
     
     try{
-      await fetch(`http://localhost:3000/tasks/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ completed: !thisTask?.completed }),
+      await updateTask(id, {
+        completed: !thisTask.completed,
       });
+      
+      setSelectedTask(null);
 
-      // refresh list
-      const response = await fetch("http://localhost:3000/tasks");
-      const data = await response.json();
-      setTasks(data);
-
-      // if(selectedTask?.id == id){
-      //   setSelectedTask(data.find((task: Task) => task.id == id));
-      // }
+      await refreshTasks();
 
     }catch(error){
       console.error("Error finishing task:", error);
     }
   }
 
-  const addTask = async () => {
+  const handleAddTask = async () => {
     const trimmedName = name.trim();
     
     if(tasks.find(t => t.name.toLowerCase() === trimmedName.toLowerCase())){
@@ -148,16 +102,11 @@ function App() {
       return;
     }
       const status = calculateStatus(deadline, deadlineTime);
+      const newTask = { name, description, deadline, deadlineTime, priority, status, completed: false };
 
       setError(""); // Clear any previous error message
       try{
-        await fetch("http://localhost:3000/tasks", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name, description, deadline, deadlineTime, priority, status, completed: false }),
-        });
+        await createTask(newTask);
 
         setName("");
         setDescription("");
@@ -166,9 +115,12 @@ function App() {
         setPriority("Low");
 
         // refresh list
-        const response = await fetch("http://localhost:3000/tasks");  //resets data on restarting server
-        const data = await response.json();
-        setTasks(data);
+        // resets data on restarting server
+        // const response = await fetch("http://localhost:3000/tasks");
+        // const data = await response.json();
+        // setTasks(data);
+
+        await refreshTasks();
 
         // setTasks([...tasks, { id: tasks.length + 1, name, description }]);
         // setName(""); //resets data on refresh
@@ -178,6 +130,21 @@ function App() {
       }
   }
 
+//   useEffect(() => {
+//   const interval = setInterval(() => {
+//     setTasks(prevTasks =>
+//       prevTasks.map(task => ({
+//         ...task,
+//         status: calculateStatus(
+//           task.deadline,
+//           task.deadlineTime
+//         )
+//       }))
+//     );
+//   }, 1000);
+
+//   return () => clearInterval(interval);
+// }, []);
   
   useEffect(() => {
     const remErrors = async () => {
@@ -190,9 +157,8 @@ function App() {
 
    const fetchTasks = async () => {
     try{
-      const response = await fetch("http://localhost:3000/tasks");
-      const data = await response.json();
-      data.forEach((task: Task) => {statusTask(task.id, calculateStatus(task.deadline, task.deadlineTime))});
+      const data = await refreshTasks();
+      data.forEach((task: Task) => {handleStatusTask(task.id, calculateStatus(task.deadline, task.deadlineTime))});
       setTasks(data);
     }catch(error){
       console.error("Error fetching tasks:", error);
@@ -200,7 +166,7 @@ function App() {
   };
   fetchTasks();
 
-  }, [statusTask]);
+  }, [handleStatusTask]);
   
   return (
     <div className="App">
@@ -224,197 +190,27 @@ function App() {
         <div className="taskListContent">
           <div className="toDoTasks">
             <h2>{activeTab}</h2>
-            {/* tasks.sort((a, b) => {
-              const dateA = new Date(a.deadline + " " + a.deadlineTime);
-              const dateB = new Date(b.deadline + " " + b.deadlineTime);
-              // Sort by deadline first
-              if(dateA.getTime() !== dateB.getTime()){
-                return dateA.getTime() - dateB.getTime();
-              }
-
-              return priorityOrder[b.priority] - priorityOrder[a.priority];
-
-            }).filter((task: Task) => (!task.completed )) */}
-            {filteredTasks.map(task => {
+            {filteredTasks.map((task: Task) => {
               return (
                 <TaskItem 
                   task={task} 
                   selectedTask={selectedTask} 
                   setSelectedTask={setSelectedTask} 
-                  completeTask={completeTask} 
-                  deleteTask={deleteTask}
+                  handleFinishTask={handleFinishTask} 
+                  handleDeleteTask={handleDeleteTask}
                 />
-
-                // <div className={`taskItem `}
-                //   key={task.id} onClick={() => selectedTask === task ? setSelectedTask(null) : setSelectedTask(task)
-                // }>
-                //   <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
-                //   <div className="taskButtons">
-                //     <button className="finishButton" onClick={(e) => {
-                //     e.stopPropagation();
-                //     completeTask(task.id, !task.completed );
-                //     }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
-                //       e.stopPropagation();
-                //       deleteTask(task.id);
-                //     }}>Delete</button>
-                //   </div>
-                // </div>
               )}
             )}
           </div>
-
-          {/* <div className="doneTasks" >
-            <div className="finishedTasks">
-              <h2>Finished</h2>
-              {tasks.filter((task: Task) => task.completed).sort((a, b) => {
-                const dateA = new Date(a.deadline + " " + a.deadlineTime);
-                const dateB = new Date(b.deadline + " " + b.deadlineTime);
-                // Sort by deadline first
-                if(dateA.getTime() !== dateB.getTime()){
-                  return dateA.getTime() - dateB.getTime();
-                }
-
-                return priorityOrder[b.priority] - priorityOrder[a.priority];
-
-                }).map((task) => (
-                <div 
-                    className={`taskItem`}
-                    key={task.id} 
-                    onClick={() => selectedTask?.id === task?.id ? setSelectedTask(null) : setSelectedTask(task)
-                  }>
-                    <p className={`taskText 
-                      ${selectedTask?.id === task.id ? "selectedTask" : ""} 
-                      ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} 
-                      ${task.completed ? 'completed' : 'incomplete'}`}
-                    >
-                        {task.name}
-                    </p>
-                    <div className="taskButtons">
-                      <button className="finishButton" onClick={(e) => {
-                      e.stopPropagation();
-                      completeTask(task.id);
-                      }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
-                        e.stopPropagation();
-                        deleteTask(task.id);
-                      }}>Delete</button>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-
-            <div className="expiredTasks">
-              <h2>Expired</h2>
-                {tasks.filter((task: Task) => (task.status == "Expired" && !task.completed)).sort((a, b) => {
-                  const dateA = new Date(a.deadline + " " + a.deadlineTime);
-                  const dateB = new Date(b.deadline + " " + b.deadlineTime);
-                  // Sort by deadline first
-                  if(dateA.getTime() !== dateB.getTime()){
-                    return dateA.getTime() - dateB.getTime();
-                  }
-
-                  return priorityOrder[b.priority] - priorityOrder[a.priority];
-
-                }).map((task) => (
-                <div className={`taskItem`}
-                    key={task.id} onClick={() => selectedTask?.id === task?.id ? setSelectedTask(null) : setSelectedTask(task)
-                  }>
-                    <p className={`taskText ${selectedTask?.id === task.id ? "selectedTask" : ""} ${task.priority + " " + task?.status?.replace(" ", "").toLowerCase()} ${task.completed ? 'completed' : 'incomplete'}`}>{task.name}</p>
-                    <div className="taskButtons">
-                      <button className="finishButton" onClick={(e) => {
-                      e.stopPropagation();
-                      completeTask(task.id);
-                      }}>{task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" onClick={(e) => {
-                        e.stopPropagation();
-                        deleteTask(task.id);
-                      }}>Delete</button>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          </div> */}
 
         </div>
       </div>
 
         <div className="rightPanel">
 
-            <AddTaskForm addTask={addTask} name={name} description={description} deadline={deadline}  deadlineTime={deadlineTime} priority={priority} error={error} setName={setName} setDescription={setDescription} setDeadline={setDeadline} setDeadlineTime={setDeadlineTime} setPriority={setPriority}/>
-
-          {/* <div className="addTaskForm">
-            <h1>Add Task</h1>
-
-            <form className="addTaskInput" onSubmit={(e) => {
-              e.preventDefault();
-              addTask();
-              }}>
-
-              <input
-                type="text"
-                value={name}
-                required
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter name"
-              />
-
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter description"
-              />
-
-              <div className="deadlineInput">
-                <input
-                  type="text"
-                  pattern="\d{2}/\d{2}/\d{4}"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  placeholder="(MM/DD/YYYY)"
-                />
-                <input
-                  type="text"
-                  pattern="\d{2}:\d{2}\s*(AM|PM)"
-                  value={deadlineTime}
-                  onChange={(e) => setDeadlineTime(e.target.value)}
-                  placeholder="(HH:MM AM/PM)"
-                />
-              </div>
-              
-              <select value={priority} onChange={(e) => setPriority(e.target.value as Task["priority"])}>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-
-                <button type="submit" disabled={!name.trim()}>
-                  Add Task
-                </button>
-            </form>
-              {error && <p className="error">{error}</p>}
-
-          </div> */}
+            <AddTaskForm handleAddTask={handleAddTask} name={name} description={description} deadline={deadline}  deadlineTime={deadlineTime} priority={priority} error={error} setName={setName} setDescription={setDescription} setDeadline={setDeadline} setDeadlineTime={setDeadlineTime} setPriority={setPriority}/>
 
           <TaskDetails selectedTask={selectedTask}/>
-          {/* <div className="taskDetails">
-            <h1>Task Details</h1>
-
-            <div >
-              {selectedTask ? (
-                <div className="taskDetailsContent">
-                  <p><strong>Name:</strong> {selectedTask.name}</p>
-                  <p><strong>Description:</strong> {selectedTask.description}</p>
-                  <p><strong>Deadline:</strong> {selectedTask.deadline} {selectedTask.deadlineTime}</p>
-                  <p><strong>Priority:</strong> {selectedTask.priority}</p>
-                  <p><strong>Status:</strong> {selectedTask.status}</p>
-                  <p>{selectedTask.completed ? <strong>Completed</strong> : <strong>Incomplete</strong>}</p>
-                </div>
-              ):(
-                <p>Select a task to see details</p>
-              )}
-            </div>
-          </div> */}
 
         </div>
     </div>

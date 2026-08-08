@@ -4,14 +4,14 @@ export default function TaskItem({
     task,
     selectedTask,
     setSelectedTask,
-    completeTask,
-    deleteTask,
+    handleFinishTask,
+    handleDeleteTask,
   }: {
     task: Task;
     selectedTask: Task | null;
     setSelectedTask: (task: Task | null) => void;
-    completeTask: (id: number) => void;
-    deleteTask: (id: number) => void;
+    handleFinishTask: (id: number) => void;
+    handleDeleteTask: (id: number) => void;
   }) {
 
     const handleSelect = () => {
@@ -36,13 +36,13 @@ export default function TaskItem({
             className="finishButton" 
             onClick={(e) => {
                 e.stopPropagation();
-                completeTask(task.id );
+                handleFinishTask(task.id );
             }}
             >
                 {task.completed ? 'UnFinish' : 'Finish'}</button>   <button className="deleteButton" 
                 onClick={(e) => {
                 e.stopPropagation();
-                deleteTask(task.id);
+                handleDeleteTask(task.id);
                 }}>
                 Delete
             </button>
